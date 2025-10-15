@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { authApi } from '@/lib/api';
@@ -13,15 +13,28 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated());
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const loginMutation = useMutation({
     mutationFn: () => authApi.login(email, password),
     onSuccess: (response) => {
       const { access_token, user } = response.data;
+      console.log('Login successful, user:', user);
       setAuth(user, access_token);
-      navigate('/');
+      // Use replace to prevent back button issues
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 100);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Login error:', error);
       alert('Login failed. Please check your credentials.');
     },
   });
